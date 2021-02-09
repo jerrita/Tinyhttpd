@@ -11,15 +11,15 @@
 ## Process
 
 - [x] void accept_request(void \*);
-- [] void bad_request(int);
-- [] void cat(int, FILE \*);
-- [] void cannot_execute(int);
-- [] void error_die(const char \*);
-- [] void execute\*cgi(int, const char \*, const char \*, const char \*);
+- [ ] void bad_request(int);
+- [ ] void cat(int, FILE \*);
+- [ ] void cannot_execute(int);
+- [ ] void error_die(const char \*);
+- [ ] void execute\*cgi(int, const char \*, const char \*, const char \*);
 - [x] int get_line(int, char \*, int);
-- [] void headers(int, const char \*);
-- [] void not_found(int);
-- [] void serve_file(int, const char \*);
-- [] int startup(u_short \*);
-- [] void unimplemented(int);
-- [] int main(void)
+- [ ] void headers(int, const char \*);
+- [ ] void not_found(int);
+- [ ] void serve_file(int, const char \*);
+- [ ] int startup(u_short \*);
+- [ ] void unimplemented(int);
+- [ ] int main(void)
