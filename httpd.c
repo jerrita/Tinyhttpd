@@ -147,7 +147,7 @@ void accept_request(void *arg)
 }
 
 /**********************************************************************/
-/* Inform the client that a request it has made has a problem.
+/* 告诉客户端它的请求有问题。
  * Parameters: client socket */
 /**********************************************************************/
 void bad_request(int client)
@@ -167,9 +167,7 @@ void bad_request(int client)
 }
 
 /**********************************************************************/
-/* Put the entire contents of a file out on a socket.  This function
- * is named after the UNIX "cat" command, because it might have been
- * easier just to do something like pipe, fork, and exec("cat").
+/* 读取完整的文件内容返回
  * Parameters: the client socket descriptor
  *             FILE pointer for the file to cat */
 /**********************************************************************/
@@ -204,9 +202,7 @@ void cannot_execute(int client)
 }
 
 /**********************************************************************/
-/* Print out an error message with perror() (for system errors; based
- * on value of errno, which indicates system call errors) and exit the
- * program indicating an error. */
+/* 将错误原因输出到 stderr，并且退出。 */
 /**********************************************************************/
 void error_die(const char *sc)
 {
@@ -378,14 +374,14 @@ int get_line(int sock, char *buf, int size)
 }
 
 /**********************************************************************/
-/* Return the informational HTTP headers about a file. */
+/* 返回 header */
 /* Parameters: the socket to print the headers on
  *             the name of the file */
 /**********************************************************************/
 void headers(int client, const char *filename)
 {
     char buf[1024];
-    (void)filename; /* could use filename to determine file type */
+    (void)filename; /* 可以通过 filename 判断文件类型 */
 
     strcpy(buf, "HTTP/1.0 200 OK\r\n");
     send(client, buf, strlen(buf), 0);
@@ -398,7 +394,7 @@ void headers(int client, const char *filename)
 }
 
 /**********************************************************************/
-/* Give a client a 404 not found status message. */
+/* 返回 404 信息. */
 /**********************************************************************/
 void not_found(int client)
 {
@@ -425,11 +421,8 @@ void not_found(int client)
 }
 
 /**********************************************************************/
-/* Send a regular file to the client.  Use headers, and report
- * errors to client if they occur.
- * Parameters: a pointer to a file structure produced from the socket
- *              file descriptor
- *             the name of the file to serve */
+/* 向客户端返回一个文件。不存在返回 404。
+ * Parameters: client filename   */
 /**********************************************************************/
 void serve_file(int client, const char *filename)
 {
@@ -439,7 +432,7 @@ void serve_file(int client, const char *filename)
 
     buf[0] = 'A';
     buf[1] = '\0';
-    while ((numchars > 0) && strcmp("\n", buf)) /* read & discard headers */
+    while ((numchars > 0) && strcmp("\n", buf)) /* 取掉 header 头 */
         numchars = get_line(client, buf, sizeof(buf));
 
     resource = fopen(filename, "r");
@@ -454,11 +447,9 @@ void serve_file(int client, const char *filename)
 }
 
 /**********************************************************************/
-/* This function starts the process of listening for web connections
- * on a specified port.  If the port is 0, then dynamically allocate a
- * port and modify the original port variable to reflect the actual
- * port.
- * Parameters: pointer to variable containing the port to connect on
+/* 这个函数在一个特定的接口监听网络连接。如果端口号为 0，则会随机分配一个端口
+ * 并修改参数 port 的值。
+ * Parameters: 指向设置端口号的指针
  * Returns: the socket */
 /**********************************************************************/
 int startup(u_short *port)
@@ -467,17 +458,38 @@ int startup(u_short *port)
     int on = 1;
     struct sockaddr_in name;
 
+    /*
+    AF = Address Family
+    PF = Protocol Family
+    意思就是 AF_INET 主要是用于互联网地址，而 PF_INET 是协议相关，通常是sockets和端口
+
+    使用上是没有区别的。
+    这其实是设计上误差。最开始设计者设想一个AF可以支持多个PF，可是后来，就没有后来了。
+    */
+
     httpd = socket(PF_INET, SOCK_STREAM, 0);
     if (httpd == -1)
         error_die("socket");
     memset(&name, 0, sizeof(name));
+
     name.sin_family = AF_INET;
     name.sin_port = htons(*port);
     name.sin_addr.s_addr = htonl(INADDR_ANY);
+
+    // closesocket（一般不会立即关闭而经历TIME_WAIT的过程）后想继续重用该socket：
+    /*
+        默认情况下，两个独立的套接字不可与同一本地接口（在TCP/IP情况下，则是端口）绑定在一起。
+        但是少数情况下，还是需要使用这种方式，来实现对一个地址的重复使用。
+        设置了这个套接字，服务器便可在重新启动之后，在相同的本地接口以端口上进行监听。
+        一般来说，一个端口释放后会等待两分钟之后才能再被使用，SO_REUSEADDR 是让端口释放后立即就可以被再次使用。 
+        SO_REUSEADDR 用于对 TCP 套接字处于 TIME_WAIT 状态下的 socket，允许重复绑定使用。
+        server 程序总是应该在调用 bind() 之前设置 SO_REUSEADDR 套接字选项。
+    */
     if ((setsockopt(httpd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on))) < 0)
     {
         error_die("setsockopt failed");
     }
+
     if (bind(httpd, (struct sockaddr *)&name, sizeof(name)) < 0)
         error_die("bind");
     if (*port == 0) /* if dynamically allocating a port */
@@ -541,7 +553,7 @@ int main(void)
             error_die("accept");
 
         // accept_request(&client_sock);
-        if (pthread_create(&newthread, NULL, (void *)accept_request, (void *)(intptr_t)client_sock) != 0)
+        if (!pthread_create(&newthread, NULL, (void *)accept_request, (void *)(intptr_t)client_sock))
             perror("pthread_create");
     }
 
